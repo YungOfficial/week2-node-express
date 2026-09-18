@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>DLS Style - Man City vs Real Madrid</title>
+<style>
+body{margin:0;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;overflow:hidden;font-family:Arial;touch-action:none}
+#hud{width:900px;color:#fff;font-size:20px;display:flex;justify-content:space-between;margin-bottom:5px}
+canvas{background:#0a6b0a;border:3px solid #fff}
+#controls{width:900px;display:flex;justify-content:space-between;margin-top:10px}
+#joy{width:130px;height:130px;border:3px solid #fff;border-radius:50%;background:rgba(255,255,255,0.1);position:relative}
+#knob{width:45px;height:45px;background:#fff;border-radius:50%;position:absolute;top:42px;left:42px}
+.btn{width:65px;height:65px;border-radius:50%;border:3px solid #fff;color:#fff;font-size:22px;font-weight:bold;margin-left:8px}
+#A{background:#e60000} #B{background:#0057b8} #C{background:#00a651}
+.team{font-weight:bold}
+</style>
+</head>
+<body>
+
+<div id="hud">
+    <div class="team" style="color:#6CABDD">MAN CITY <span id="s1">0</span></div>
+    <div id="time">05:00</div>
+    <div class="team" style="color:#FEBE10">REAL MADRID <span id="s2">0</span></div>
+</div>
+
+<canvas id="c" width="900" height="550"></canvas>
+
+<div id="controls">
+    <div id="joy"><div id="knob"></div></div>
+    <div>
+        <button class="btn" id="A">A</button>
+        <button class="btn" id="B">B</button>
+        <button class="btn" id="C">C</button>
+    </div>
+</div>
+
+<script>
+const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
+let camX=0, time=300, score1=0, score2=0, running=true;
+let ball={x:450,y:275,vx:0,vy:0,owner:-1};
+let players=[],you=5; // You control CM
+
+// Teams: 0=City blue, 1=Madrid white
+const cityNames=["Ederson","Walker","Dias","Stones","Ake","Rodri","De Bruyne","Bernardo","Foden","Haaland","Grealish"];
+const madridNames=["Courtois","Carvajal","Rudiger","Alaba","Mendy","Kroos","Valverde","Bellingham","Rodrygo","Mbappe","Vinicius"];
+
+function init(){
+    players=[];
+    // City formation 4-3-3
+    let cityPos=[[70,275],[150,100],[150,200],[150,350],[150,450],[250,200],[250,275],[250,350],[350,150],[350,275],[350,400]];
+    let madridPos=[[830,275],[750,100],[750,200],[750,350],[750,450],[650,200],[650,275],[650,350],[550,150],[550,275],[550,400]];
+    cityPos.forEach((p,i)=>players.push({x:p[0],y:p[1],team:0,name:cityNames[i],isGK:i===0}));
+    madridPos.forEach((p,i)=>players.push({x:p[0],y:p[1],team:1,name:madridNames[i],isGK:i===0}));
+    ball={x:450,y:275,vx:0,vy:0,owner:-1};
+}
+init();
+
+// Joystick
+let joy={x:0,y:0},joyDown=false;
+const joyEl=document.getElementById('joy'),knob=document.getElementById('knob');
+function setJoy(e){
+    const r=joyEl.getBoundingClientRect();
+    let x=(e.touches?e.touches[0].clientX:e.clientX)-r.left-65;
+    let y=(e.touches?e.touches[0].clientY:e.clientY)-r.top-65;
+    let d=Math.hypot(x,y); if(d>55){x=x*55/d;y=y*55/d}
+    knob.style.left=42+x+'px'; knob.style.top=42+y+'px';
+    joy.x=x/55; joy.y=y/55;
+}
+joyEl.addEventListener('mousedown',()=>joyDown=true);
+joyEl.addEventListener('touchstart',()=>joyDown=true);
+addEventListener('mousemove',e=>{if(joyDown)setJoy(e)});
+addEventListener('touchmove',e=>{if(joyDown)setJoy(e)});
+addEventListener('mouseup',()=>{joyDown=false;joy={x:0,y:0};knob.style.left='42px';knob.style.top='42px'});
+addEventListener('touchend',()=>{joyDown=false;joy={x:0,y:0};knob.style.left='42px';knob.style.top='42px'});
+
+// Buttons
+document.getElementById('A').addEventListener('touchstart',()=>btn('A'));
+document.getElementById('B').addEventListener('touchstart',()=>btn('B'));
+document.getElementById('C').addEventListener('touchstart',()=>btn('C'));
+document.getElementById('A').addEventListener('mousedown',()=>btn('A'));
+document.getElementById('B').addEventListener('mousedown',()=>btn('B'));
+document.getElementById('C').addEventListener('mousedown',()=>btn('C'));
+
+function btn(b){
+    let p=players[you];
+    if(b==='A'){
+        if(ball.owner===you){ // SHOOT
+            let dir = ball.x>450?-1:1;
+            ball.vx = dir*12; ball.vy = (Math.random()-0.5)*3; ball.owner=-1;
+        }else{ // TACKLE
+            players.forEach((pl,i)=>{if(Math.hypot(pl.x-ball.x,pl.y-ball.y)<20)ball.owner=you});
+        }
+    }
+    if(b==='B' && ball.owner===you){ // SHORT PASS
+        let closest=players[you+1]; let md=999;
+        for(let i=0;i<11;i++){let d=Math.hypot(players[i].x-p.x,players[i].y-p.y); if(i!==you&&d<md){md=d;closest=players[i]}}
+        ball.vx=(closest.x-p.x)*0.12; ball.vy=(closest.y-p.y)*0.12; ball.owner=-1;
+    }
+    if(b==='C'){
+        if(ball.owner===you){ // LONG PASS / CROSS
+            ball.vx = (p.x<450?10:-10); ball.vy = (Math.random()-0.5)*2; ball.owner=-1;
+        }else{ // CHANGE PLAYER
+            let best=you,md=999;
+            for(let i=0;i<11;i++){let d=Math.hypot(players[i].x-ball.x,players[i].y-ball.y); if(d<md){md=d;best=i}}
+            you=best;
+        }
+    }
+}
+
+function update(){
+    if(!running)return;
+    time-=1/60;
+    document.getElementById('time').textContent=String(Math.floor(time/60)).padStart(2,'0')+':'+String(Math.floor(time%60)).padStart(2,'0');
+    if(time<=0){running=false;alert(`FT: Man City ${score1} - ${score2} Real Madrid`)}
+
+    // Move camera to follow ball
+    camX = ball.x - 450;
+
+    // Move your player
+    let p=players[you];
+    p.x+=joy.x*4.5; p.y+=joy.y*4.5;
+    p.x=Math.max(20,Math.min(880,p.x)); p.y=Math.max(20,Math.min(530,p.y));
+
+    // CPU AI
+    players.forEach((pl,i)=>{
+        if(i===you) return;
+        let target = ball.owner===i? {x: ball.x<450?800:100, y:275} : ball;
+        pl.x += (target.x-pl.x)*0.025;
+        pl.y += (target.y-pl.y)*0.025;
+        // GK
+        if(pl.isGK){
+            pl.x = pl.team===0?70:830;
+            pl.y += (ball.y-pl.y)*0.05;
+        }
+        // pickup ball
+        if(ball.owner==-1 && Math.hypot(pl.x-ball.x,pl.y-ball.y)<18)ball.owner=i;
+    })
+
+    // Ball
+    if(ball.owner>=0){ball.x=players[ball.owner].x+(players[ball.owner].team===0?12:-12);ball.y=players[ball.owner].y}
+    else{ball.x+=ball.vx;ball.y+=ball.vy;ball.vx*=0.96;ball.vy*=0.96}
+    ball.x=Math.max(10,Math.min(890,ball.x)); ball.y=Math.max(10,Math.min(540,ball.y));
+
+    // Goals
+    if(ball.x<15 && ball.y>225 && ball.y<325){score2++;document.getElementById('s2').textContent=score2;init()}
+    if(ball.x>885 && ball.y>225 && ball.y<325){score1++;document.getElementById('s1').textContent=score1;init()}
+}
+
+function drawPitch(){
+    ctx.save();
+    ctx.translate(-camX,0);
+    // Grass stripes
+    for(let i=0;i<900;i+=40)ctx.fillStyle=i%80?'#0a6b0a':'#0c7a0c',ctx.fillRect(i,0,40,550);
+    // Lines
+    ctx.strokeStyle='#fff';ctx.lineWidth=3;
+    ctx.strokeRect(0,0,900,550);
+    ctx.beginPath();ctx.moveTo(450,0);ctx.lineTo(450,550);ctx.stroke();
+    ctx.beginPath();ctx.arc(450,275,80,0,Math.PI*2);ctx.stroke();
+    ctx.strokeRect(0,190,100,170);ctx.strokeRect(800,190,100,170); // boxes
+    // Goal posts + net
+    ctx.lineWidth=6; ctx.strokeStyle='#fff';
+    ctx.strokeRect(-10,225,10,100); ctx.strokeRect(900,225,10,100); // posts
+    ctx.strokeStyle='rgba(255,255,255,0.3)'; ctx.lineWidth=1;
+    for(let i=225;i<=325;i+=10)ctx.beginPath(),ctx.moveTo(-10,i),ctx.lineTo(0,i),ctx.stroke();
+    for(let i=225;i<=325;i+=10)ctx.beginPath(),ctx.moveTo(900,i),ctx.lineTo(910,i),ctx.stroke();
+    ctx.restore();
+}
+
+function draw(){
+    ctx.clearRect(0,0,900,550);
+    drawPitch();
+
+    // Players
+    ctx.save(); ctx.translate(-camX,0);
+    players.forEach((p,i)=>{
+        ctx.fillStyle=i===you?'#00ffff':p.team===0?'#6CABDD':'#ffffff';
+        ctx.beginPath();ctx.arc(p.x,p.y,12,0,Math.PI*2);ctx.fill();
+        if(p.isGK)ctx.fillStyle='#FFD700',ctx.fill();
+        // Name
+        ctx.fillStyle='#000';ctx.font='9px Arial';ctx.fillText(p.name,p.x-20,p.y-18);
+    })
+    // Ball
+    ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(ball.x,ball.y,8,0,Math.PI*2);ctx.fill();
+    // Referee
+    ctx.fillStyle='yellow';ctx.beginPath();ctx.arc(450,300,10,0,Math.PI*2);ctx.fill();
+    ctx.restore();
+}
+
+function loop(){update();draw();requestAnimationFrame(loop)}
+loop();
+</script>
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>DLS Style - Man City vs Real Madrid</title>
+<style>
+body{margin:0;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;overflow:hidden;font-family:Arial;touch-action:none}
+#hud{width:900px;color:#fff;font-size:20px;display:flex;justify-content:space-between;margin-bottom:5px}
+canvas{background:#0a6b0a;border:3px solid #fff}
+#controls{width:900px;display:flex;justify-content:space-between;margin-top:10px}
+#joy{width:130px;height:130px;border:3px solid #fff;border-radius:50%;background:rgba(255,255,255,0.1);position:relative}
+#knob{width:45px;height:45px;background:#fff;border-radius:50%;position:absolute;top:42px;left:42px}
+.btn{width:65px;height:65px;border-radius:50%;border:3px solid #fff;color:#fff;font-size:22px;font-weight:bold;margin-left:8px}
+#A{background:#e60000} #B{background:#0057b8} #C{background:#00a651}
+.team{font-weight:bold}
+</style>
+</head>
+<body>
+
+<div id="hud">
+    <div class="team" style="color:#6CABDD">MAN CITY <span id="s1">0</span></div>
+    <div id="time">05:00</div>
+    <div class="team" style="color:#FEBE10">REAL MADRID <span id="s2">0</span></div>
+</div>
+
+<canvas id="c" width="900" height="550"></canvas>
+
+<div id="controls">
+    <div id="joy"><div id="knob"></div></div>
+    <div>
+        <button class="btn" id="A">A</button>
+        <button class="btn" id="B">B</button>
+        <button class="btn" id="C">C</button>
+    </div>
+</div>
+
+<script>
+const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
+let camX=0, time=300, score1=0, score2=0, running=true;
+let ball={x:450,y:275,vx:0,vy:0,owner:-1};
+let players=[],you=5; // You control CM
+
+// Teams: 0=City blue, 1=Madrid white
+const cityNames=["Ederson","Walker","Dias","Stones","Ake","Rodri","De Bruyne","Bernardo","Foden","Haaland","Grealish"];
+const madridNames=["Courtois","Carvajal","Rudiger","Alaba","Mendy","Kroos","Valverde","Bellingham","Rodrygo","Mbappe","Vinicius"];
+
+function init(){
+    players=[];
+    // City formation 4-3-3
+    let cityPos=[[70,275],[150,100],[150,200],[150,350],[150,450],[250,200],[250,275],[250,350],[350,150],[350,275],[350,400]];
+    let madridPos=[[830,275],[750,100],[750,200],[750,350],[750,450],[650,200],[650,275],[650,350],[550,150],[550,275],[550,400]];
+    cityPos.forEach((p,i)=>players.push({x:p[0],y:p[1],team:0,name:cityNames[i],isGK:i===0}));
+    madridPos.forEach((p,i)=>players.push({x:p[0],y:p[1],team:1,name:madridNames[i],isGK:i===0}));
+    ball={x:450,y:275,vx:0,vy:0,owner:-1};
+}
+init();
+
+// Joystick
+let joy={x:0,y:0},joyDown=false;
+const joyEl=document.getElementById('joy'),knob=document.getElementById('knob');
+function setJoy(e){
+    const r=joyEl.getBoundingClientRect();
+    let x=(e.touches?e.touches[0].clientX:e.clientX)-r.left-65;
+    let y=(e.touches?e.touches[0].clientY:e.clientY)-r.top-65;
+    let d=Math.hypot(x,y); if(d>55){x=x*55/d;y=y*55/d}
+    knob.style.left=42+x+'px'; knob.style.top=42+y+'px';
+    joy.x=x/55; joy.y=y/55;
+}
+joyEl.addEventListener('mousedown',()=>joyDown=true);
+joyEl.addEventListener('touchstart',()=>joyDown=true);
+addEventListener('mousemove',e=>{if(joyDown)setJoy(e)});
+addEventListener('touchmove',e=>{if(joyDown)setJoy(e)});
+addEventListener('mouseup',()=>{joyDown=false;joy={x:0,y:0};knob.style.left='42px';knob.style.top='42px'});
+addEventListener('touchend',()=>{joyDown=false;joy={x:0,y:0};knob.style.left='42px';knob.style.top='42px'});
+
+// Buttons
+document.getElementById('A').addEventListener('touchstart',()=>btn('A'));
+document.getElementById('B').addEventListener('touchstart',()=>btn('B'));
+document.getElementById('C').addEventListener('touchstart',()=>btn('C'));
+document.getElementById('A').addEventListener('mousedown',()=>btn('A'));
+document.getElementById('B').addEventListener('mousedown',()=>btn('B'));
+document.getElementById('C').addEventListener('mousedown',()=>btn('C'));
+
+function btn(b){
+    let p=players[you];
+    if(b==='A'){
+        if(ball.owner===you){ // SHOOT
+            let dir = ball.x>450?-1:1;
+            ball.vx = dir*12; ball.vy = (Math.random()-0.5)*3; ball.owner=-1;
+        }else{ // TACKLE
+            players.forEach((pl,i)=>{if(Math.hypot(pl.x-ball.x,pl.y-ball.y)<20)ball.owner=you});
+        }
+    }
+    if(b==='B' && ball.owner===you){ // SHORT PASS
+        let closest=players[you+1]; let md=999;
+        for(let i=0;i<11;i++){let d=Math.hypot(players[i].x-p.x,players[i].y-p.y); if(i!==you&&d<md){md=d;closest=players[i]}}
+        ball.vx=(closest.x-p.x)*0.12; ball.vy=(closest.y-p.y)*0.12; ball.owner=-1;
+    }
+    if(b==='C'){
+        if(ball.owner===you){ // LONG PASS / CROSS
+            ball.vx = (p.x<450?10:-10); ball.vy = (Math.random()-0.5)*2; ball.owner=-1;
+        }else{ // CHANGE PLAYER
+            let best=you,md=999;
+            for(let i=0;i<11;i++){let d=Math.hypot(players[i].x-ball.x,players[i].y-ball.y); if(d<md){md=d;best=i}}
+            you=best;
+        }
+    }
+}
+
+function update(){
+    if(!running)return;
+    time-=1/60;
+    document.getElementById('time').textContent=String(Math.floor(time/60)).padStart(2,'0')+':'+String(Math.floor(time%60)).padStart(2,'0');
+    if(time<=0){running=false;alert(`FT: Man City ${score1} - ${score2} Real Madrid`)}
+
+    // Move camera to follow ball
+    camX = ball.x - 450;
+
+    // Move your player
+    let p=players[you];
+    p.x+=joy.x*4.5; p.y+=joy.y*4.5;
+    p.x=Math.max(20,Math.min(880,p.x)); p.y=Math.max(20,Math.min(530,p.y));
+
+    // CPU AI
+    players.forEach((pl,i)=>{
+        if(i===you) return;
+        let target = ball.owner===i? {x: ball.x<450?800:100, y:275} : ball;
+        pl.x += (target.x-pl.x)*0.025;
+        pl.y += (target.y-pl.y)*0.025;
+        // GK
+        if(pl.isGK){
+            pl.x = pl.team===0?70:830;
+            pl.y += (ball.y-pl.y)*0.05;
+        }
+        // pickup ball
+        if(ball.owner==-1 && Math.hypot(pl.x-ball.x,pl.y-ball.y)<18)ball.owner=i;
+    })
+
+    // Ball
+    if(ball.owner>=0){ball.x=players[ball.owner].x+(players[ball.owner].team===0?12:-12);ball.y=players[ball.owner].y}
+    else{ball.x+=ball.vx;ball.y+=ball.vy;ball.vx*=0.96;ball.vy*=0.96}
+    ball.x=Math.max(10,Math.min(890,ball.x)); ball.y=Math.max(10,Math.min(540,ball.y));
+
+    // Goals
+    if(ball.x<15 && ball.y>225 && ball.y<325){score2++;document.getElementById('s2').textContent=score2;init()}
+    if(ball.x>885 && ball.y>225 && ball.y<325){score1++;document.getElementById('s1').textContent=score1;init()}
+}
+
+function drawPitch(){
+    ctx.save();
+    ctx.translate(-camX,0);
+    // Grass stripes
+    for(let i=0;i<900;i+=40)ctx.fillStyle=i%80?'#0a6b0a':'#0c7a0c',ctx.fillRect(i,0,40,550);
+    // Lines
+    ctx.strokeStyle='#fff';ctx.lineWidth=3;
+    ctx.strokeRect(0,0,900,550);
+    ctx.beginPath();ctx.moveTo(450,0);ctx.lineTo(450,550);ctx.stroke();
+    ctx.beginPath();ctx.arc(450,275,80,0,Math.PI*2);ctx.stroke();
+    ctx.strokeRect(0,190,100,170);ctx.strokeRect(800,190,100,170); // boxes
+    // Goal posts + net
+    ctx.lineWidth=6; ctx.strokeStyle='#fff';
+    ctx.strokeRect(-10,225,10,100); ctx.strokeRect(900,225,10,100); // posts
+    ctx.strokeStyle='rgba(255,255,255,0.3)'; ctx.lineWidth=1;
+    for(let i=225;i<=325;i+=10)ctx.beginPath(),ctx.moveTo(-10,i),ctx.lineTo(0,i),ctx.stroke();
+    for(let i=225;i<=325;i+=10)ctx.beginPath(),ctx.moveTo(900,i),ctx.lineTo(910,i),ctx.stroke();
+    ctx.restore();
+}
+
+function draw(){
+    ctx.clearRect(0,0,900,550);
+    drawPitch();
+
+    // Players
+    ctx.save(); ctx.translate(-camX,0);
+    players.forEach((p,i)=>{
+        ctx.fillStyle=i===you?'#00ffff':p.team===0?'#6CABDD':'#ffffff';
+        ctx.beginPath();ctx.arc(p.x,p.y,12,0,Math.PI*2);ctx.fill();
+        if(p.isGK)ctx.fillStyle='#FFD700',ctx.fill();
+        // Name
+        ctx.fillStyle='#000';ctx.font='9px Arial';ctx.fillText(p.name,p.x-20,p.y-18);
+    })
+    // Ball
+    ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(ball.x,ball.y,8,0,Math.PI*2);ctx.fill();
+    // Referee
+    ctx.fillStyle='yellow';ctx.beginPath();ctx.arc(450,300,10,0,Math.PI*2);ctx.fill();
+    ctx.restore();
+}
+
+function loop(){update();draw();requestAnimationFrame(loop)}
+loop();
+</script>
+</body>
+</html>

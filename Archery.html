@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Stickman Archery</title>
+</head>
+<body style="margin:0; padding:0; background:linear-gradient(to top, #87CEEB 0%, #E0F6FF 100%); display:flex; flex-direction:column; justify-content:center; align-items:center; height:100vh; font-family:Arial, sans-serif; overflow:hidden; touch-action:none;">
+
+<div style="background:#fff; border:3px solid #333; border-radius:15px; padding:15px; box-shadow:0 5px 20px rgba(0,0,0,0.3);">
+
+    <div style="display:flex; justify-content:space-between; color:#000; margin-bottom:10px; font-size:20px; font-weight:bold;">
+        <div>SCORE: <span id="score">0</span></div>
+        <div>ARROWS: <span id="arrows">10</span></div>
+    </div>
+
+    <canvas id="gameCanvas" width="600" height="400" style="background:linear-gradient(to top, #90EE90 0%, #87CEEB 100%); border:2px solid #333; border-radius:10px; display:block; cursor:crosshair;"></canvas>
+</div>
+
+<div id="message" style="margin-top:15px; font-size:18px; color:#333; font-weight:bold;">Pull back to aim, release to shoot!</div>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const scoreEl = document.getElementById('score');
+const arrowsEl = document.getElementById('arrows');
+const messageEl = document.getElementById('message');
+
+let score = 0;
+let arrows = 10;
+let gameOver = false;
+
+// Stickman
+const player = { x: 80, y: canvas.height - 60, armX: 80, armY: canvas.height - 80 };
+
+// Arrow
+let arrow = { x: player.x, y: player.y - 20, vx: 0, vy: 0, shot: false, angle: 0 };
+let arrowsInAir = [];
+
+// Target
+const target = { x: canvas.width - 100, y: canvas.height/2, r: 40, rings: 5 };
+
+let isAiming = false;
+let aimStart = { x: 0, y: 0 };
+
+// Mouse/Touch controls
+canvas.addEventListener('mousedown', startAim);
+canvas.addEventListener('touchstart', (e) => { e.preventDefault(); startAim(e.touches[0]); });
+
+canvas.addEventListener('mousemove', updateAim);
+canvas.addEventListener('touchmove', (e) => { e.preventDefault(); updateAim(e.touches[0]); });
+
+canvas.addEventListener('mouseup', shoot);
+canvas.addEventListener('touchend', (e) => { e.preventDefault(); shoot(); });
+
+function startAim(e) {
+    if(gameOver || arrow.shot) return;
+    const rect = canvas.getBoundingClientRect();
+    aimStart.x = e.clientX - rect.left;
+    aimStart.y = e.clientY - rect.top;
+    isAiming = true;
+}
+
+function updateAim(e) {
+    if(!isAiming) return;
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    // Set bow arm position
+    player.armX = mouseX;
+    player.armY = mouseY;
+
+    // Calculate angle
+    let dx = player.x - mouseX;
+    let dy = player.y - 20 - mouseY;
+    arrow.angle = Math.atan2(dy, dx);
+}
+
+function shoot() {
+    if(!isAiming || gameOver || arrow.shot) return;
+    isAiming = false;
+
+    // Power based on pull distance
+    let dx = player.x - player.armX;
+    let dy = player.y - 20 - player.armY;
+    let power = Math.min(Math.sqrt(dx*dx + dy*dy) / 8, 15);
+
+    // Create new arrow
+    arrowsInAir.push({
+        x: player.x,
+        y: player.y - 20,
+        vx: Math.cos(arrow.angle) * power,
+        vy: Math.sin(arrow.angle) * power,
+        angle: arrow.angle,
+        trail: []
+    });
+
+    arrows--;
+    arrowsEl.textContent = arrows;
+
+    if(arrows <= 0) {
+        setTimeout(() => {
+            if(arrowsInAir.length === 0) gameOver = true;
+        }, 2000);
+    }
+}
+
+function update() {
+    if(gameOver) {
+        messageEl.textContent = "GAME OVER! Final Score: " + score;
+        return;
+    }
+
+    // Update arrows
+    for(let i = arrowsInAir.length - 1; i >= 0; i--) {
+        let a = arrowsInAir[i];
+
+        a.trail.push({x: a.x, y: a.y});
+        if(a.trail.length > 10) a.trail.shift();
+
+        a.x += a.vx;
+        a.y += a.vy;
+        a.vy += 0.25; // gravity
+        a.angle = Math.atan2(a.vy, a.vx);
+
+        // Check target hit
+        let dist = Math.sqrt((a.x - target.x)**2 + (a.y - target.y)**2);
+        if(dist < target.r) {
+            let points = Math.ceil((target.r - dist) / target.r * 10) * 10;
+            score += points;
+            scoreEl.textContent = score;
+            messageEl.textContent = "HIT! +" + points + " points!";
+            arrowsInAir.splice(i, 1);
+            setTimeout(() => { messageEl.textContent = "Pull back to aim, release to shoot!"; }, 1000);
+            continue;
+        }
+
+        // Remove if off screen
+        if(a.x < 0 || a.x > canvas.width || a.y > canvas.height) {
+            arrowsInAir.splice(i, 1);
+        }
+    }
+
+    if(arrows <= 0 && arrowsInAir.length === 0) {
+        gameOver = true;
+    }
+}
+
+function drawStickman() {
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 3;
+
+    // Head
+    ctx.beginPath();
+    ctx.arc(player.x, player.y - 40, 10, 0, Math.PI*2);
+    ctx.stroke();
+
+    // Body
+    ctx.beginPath();
+    ctx.moveTo(player.x, player.y - 30);
+    ctx.lineTo(player.x, player.y);
+    ctx.stroke();
+
+    // Arms
+    ctx.beginPath();
+    ctx.moveTo(player.x, player.y - 20);
+    ctx.lineTo(player.armX, player.armY);
+    ctx.stroke();
+
+    // Legs
+    ctx.beginPath();
+    ctx.moveTo(player.x, player.y);
+    ctx.lineTo(player.x - 10, player.y + 20);
+    ctx.moveTo(player.x, player.y);
+    ctx.lineTo(player.x + 10, player.y + 20);
+    ctx.stroke();
+}
+
+function drawBow() {
+    ctx.strokeStyle = '#8B4513';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(player.x, player.y - 20, 25, -Math.PI/2, Math.PI/2);
+    ctx.stroke();
+
+    // Bow string
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(player.x, player.y - 45);
+    ctx.lineTo(player.armX, player.armY);
+    ctx.lineTo(player.x, player.y + 5);
+    ctx.stroke();
+}
+
+function drawTarget() {
+    const colors = ['#FF0000', '#FFFFFF', '#FF0000', '#FFFFFF', '#000000'];
+    for(let i = target.rings; i > 0; i--) {
+        ctx.beginPath();
+        ctx.arc(target.x, target.y, target.r * i / target.rings, 0, Math.PI*2);
+        ctx.fillStyle = colors[i-1];
+        ctx.fill();
+        ctx.stroke();
+    }
+    // Bullseye
+    ctx.beginPath();
+    ctx.arc(target.x, target.y, 5, 0, Math.PI*2);
+    ctx.fillStyle = '#FFD700';
+    ctx.fill();
+}
+
+function drawArrow(a) {
+    // Trail
+    ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for(let p of a.trail) ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+
+    // Arrow
+    ctx.save();
+    ctx.translate(a.x, a.y);
+    ctx.rotate(a.angle);
+    ctx.strokeStyle = '#8B4513';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(-20, 0);
+    ctx.lineTo(20, 0);
+    ctx.stroke();
+    // Arrowhead
+    ctx.beginPath();
+    ctx.moveTo(20, 0);
+    ctx.lineTo(10, -5);
+    ctx.lineTo(10, 5);
+    ctx.closePath();
+    ctx.fillStyle = '#666';
+    ctx.fill();
+    ctx.restore();
+}
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Ground
+    ctx.fillStyle = '#228B22';
+    ctx.fillRect(0, canvas.height - 40, canvas.width, 40);
+
+    drawTarget();
+    drawStickman();
+    drawBow();
+
+    for(let a of arrowsInAir) drawArrow(a);
+
+    // Aiming line
+    if(isAiming) {
+        ctx.strokeStyle = 'rgba(255,0,0,0.3)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5,5]);
+        ctx.beginPath();
+        ctx.moveTo(player.x, player.y - 20);
+        ctx.lineTo(player.armX, player.armY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+    }
+}
+
+function gameLoop() {
+    update();
+    draw();
+    requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
+</script>
+</body>
+</html>

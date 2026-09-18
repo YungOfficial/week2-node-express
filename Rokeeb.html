@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Web Page</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f5f5f5;
+    }
+    /* Navigation Bar */
+    nav {
+      background-color: #333;
+      padding: 15px;
+      text-align: center;
+    }
+    nav a {
+      color: yellowgreen;
+      text-decoration: none;
+      margin: 0 20px;
+      font-weight: bold;
+    }
+    nav a:hover {
+      color: #ffcc00;
+    }
+    .container {
+      padding: 20px;
+      max-width: 900px;
+      margin: auto;
+      background: white;
+    }
+    h1 {
+      color: #333;
+    }
+    /* Image */
+    .main-img {
+      width: 20%;
+      max-width: 100px;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+    /* Student Table */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    table, th, td {
+      border: 1px solid #ccc;
+    }
+    th {
+      background-color: #333;
+      color: white;
+      padding: 10px;
+    }
+    td {
+      padding: 10px;
+      text-align: center;
+    }
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <nav>
+    <a href="index.html" target="_blank">Home</a>
+    <a href="about.html" target="_blank">About</a>
+    <a href="contact.html">Contact Us</a>
+  </nav>
+
+  <div class="container">
+    <h1>Welcome to Student Portal</h1>
+    <p>This is a basic web page for the assignment.</p>
+
+    <!-- Image -->
+    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQq3c-Kp_9--XdFudOTM5vg6e9YjFbmFbK0xH2hceu4VA&s=10 " alt="School Image" class="main-img">
+
+    <h2>Student Data</h2>
+    
+    <!-- Student Table -->
+    <table>
+      <thead>
+        <tr>
+          <th>Student Name</th>
+          <th>Student Class</th>
+          <th>Student Grade</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Ismail Rokeeb</td>
+          <td>HND 1</td>
+          <td>A</td>
+        </tr>
+        <tr>
+          <td>Yusuf Ahmed</td>
+          <td>HND 2</td>
+          <td>B</td>
+        </tr>
+        <tr>
+          <td>Fatima Ali</td>
+          <td>ND 1</td>
+          <td>A</td>
+        </tr>
+        <tr>
+          <td>John Okoro</td>
+          <td>ND 2</td>
+          <td>B</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</body>
+</html>

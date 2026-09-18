@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medium Clone</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Georgia', serif;
+            background-color: #faf8f3;
+            color: #000;
+        }
+
+        /* ===== HEADER ===== */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 5%;
+            border-bottom: 1px solid #000;
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            font-family: 'Georgia', serif;
+        }
+
+        .nav-desktop {
+            display: none; /* hidden on mobile */
+            gap: 25px;
+            align-items: center;
+        }
+
+        .nav-desktop a {
+            text-decoration: none;
+            color: #000;
+            font-size: 14px;
+            font-family: Arial, sans-serif;
+        }
+
+        .btn {
+            background: #000;
+            color: #fff;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            font-family: Arial, sans-serif;
+        }
+
+        .btn-mobile {
+            display: block; /* show on mobile */
+        }
+
+        /* ===== HERO ===== */
+        .hero {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 80px 5%;
+            min-height: 70vh;
+        }
+
+        .hero-text h1 {
+            font-size: 48px;
+            line-height: 1.1;
+            margin-bottom: 20px;
+            font-family: 'Georgia', serif;
+        }
+
+        .hero-text p {
+            font-size: 18px;
+            margin-bottom: 30px;
+            max-width: 400px;
+            font-family: Arial, sans-serif;
+            color: #333;
+        }
+
+        .btn-green {
+            background: #1a8917; /* Medium green */
+            color: #fff;
+            padding: 12px 30px;
+            border-radius: 30px;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            display: block; /* show on mobile */
+        }
+
+        .btn-black {
+            background: #000;
+            color: #fff;
+            padding: 8px 18px;
+            border-radius: 20px;
+            border: none;
+            font-size: 14px;
+            cursor: pointer;
+            display: none; /* hide on mobile */
+        }
+
+        .hero-image {
+            display: none; /* hidden on mobile */
+        }
+
+        /* ===== FOOTER ===== */
+        footer {
+            border-top: 1px solid #ddd;
+            padding: 20px 5%;
+        }
+
+        .footer-links {
+            list-style: none;
+            display: flex;
+            justify-content: flex-start; /* FIX: start from left, no center space */
+            flex-wrap: wrap;
+            gap: 18px;
+        }
+
+        .footer-links li a {
+            text-decoration: none;
+            color: #6b6b6b;
+            font-size: 13px;
+            font-family: Arial, sans-serif;
+        }
+
+        .hide-mobile {
+            display: none; /* hide extra links on mobile */
+        }
+
+        /* ===== DESKTOP VIEW ===== */
+        @media (min-width: 768px) {
+            .nav-desktop {
+                display: flex; /* show nav on desktop */
+            }
+
+            .btn-mobile {
+                display: none; /* FIX: hide mobile button on desktop */
+            }
+
+            .hero-text h1 {
+                font-size: 88px;
+            }
+
+            .btn-green {
+                display: none; /* hide green button on desktop */
+            }
+
+            .btn-black {
+                display: inline-block; /* show black button on desktop */
+            }
+
+            .hero-image {
+                display: block; /* show flower on desktop */
+            }
+
+            .hero-image img {
+                width: 300px;
+            }
+
+            .hide-mobile {
+                display: list-item; /* show all footer links on desktop */
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- HEADER -->
+    <header>
+        <div class="logo">Medium</div>
+        
+        <!-- Desktop Nav -->
+        <nav class="nav-desktop">
+            <a href="#">Our story</a>
+            <a href="#">Membership</a>
+            <a href="#">Write</a>
+            <a href="#">Sign in</a>
+            <button class="btn">Get started</button>
+        </nav>
+
+        <!-- Mobile Only Button -->
+        <button class="btn btn-mobile">Get started</button>
+    </header>
+
+    <!-- HERO SECTION -->
+    <main class="hero">
+        <div class="hero-text">
+            <h1>Human<br>stories &<br>ideas</h1>
+            <p>A place to read, write, and deepen your understanding</p>
+            <button class="btn-green">Start reading</button>
+            <button class="btn-black">Start reading</button>
+        </div>
+        <div class="hero-image">
+            <img src="flower.png" alt="Green flower decoration">
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer>
+        <ul class="footer-links">
+            <li><a href="#" target="_blank">Help</a></li>
+            <li class="hide-mobile"><a href="#" target="_blank">Status</a></li>
+            <li><a href="#" target="_blank">About</a></li>
+            <li class="hide-mobile"><a href="#" target="_blank">Careers</a></li>
+            <li class="hide-mobile"><a href="#" target="_blank">Press</a></li>
+            <li class="hide-mobile"><a href="#" target="_blank">Blog</a></li>
+            <li class="hide-mobile"><a href="#" target="_blank">Store</a></li>
+            <li><a href="#" target="_blank">Privacy</a></li>
+            <li class="hide-mobile"><a href="#" target="_blank">Rules</a></li>
+            <li><a href="#" target="_blank">Terms</a></li>
+            <li class="hide-mobile"><a href="#" target="_blank">Text to speech</a></li>
+        </ul>
+    </footer>
+
+</body>
+</html>

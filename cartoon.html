@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Cartoon Login Pro</title>
+<style>
+  body {
+    margin: 0;
+    background: linear-gradient(to bottom, #87CEEB, #E0F6FF);
+    font-family: 'Comic Sans MS', cursive;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+  
+  /* Cartoon Character */
+  .character {
+    position: absolute;
+    bottom: 80px;
+    left: -200px;
+    width: 150px;
+    transition: all 3s ease-in-out;
+    z-index: 5;
+  }
+  
+  .character img {
+    width: 100%;
+  }
+  
+  .bag {
+    width: 50px;
+    position: absolute;
+    bottom: 0;
+    left: 30px;
+    transition: all 0.5s ease;
+  }
+  
+  /* Animations */
+  @keyframes walkIn {
+    to { left: 120px; }
+  }
+  @keyframes stepAside {
+    to { left: 280px; }
+  }
+  @keyframes bounceBag {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-15px); }
+  }
+  @keyframes dance {
+    0%, 100% { transform: rotate(0deg) scale(1); }
+    25% { transform: rotate(15deg) scale(1.1); }
+    75% { transform: rotate(-15deg) scale(1.1); }
+  }
+  
+  /* Login Form */
+  .login-box {
+    background: white;
+    padding: 30px 40px;
+    border-radius: 25px;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.25);
+    text-align: center;
+    opacity: 0;
+    transform: scale(0.8);
+    transition: all 1s ease;
+    z-index: 10;
+  }
+  
+  .login-box.show {
+    opacity: 1;
+    transform: scale(1);
+  }
+  
+  input {
+    width: 220px;
+    padding: 12px;
+    margin: 10px 0;
+    border: 2px solid #87CEEB;
+    border-radius: 12px;
+    font-size: 15px;
+  }
+  
+  button {
+    background: #4CAF50;
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 12px;
+    cursor: pointer;
+    margin: 8px;
+    font-size: 16px;
+    font-weight: bold;
+  }
+  
+  button:hover { background: #45a049; transform: scale(1.05); }
+  
+  .success {
+    color: green;
+    font-weight: bold;
+    font-size: 18px;
+    display: none;
+    margin-top: 10px;
+  }
+</style>
+</head>
+<body>
+
+<!-- Cartoon Character - using free SVG -->
+<div class="character" id="char">
+  <img src="https://cdn3d.iconscout.com/3d/premium/thumb/boy-walking-with-bag-3d-illustration-download-png-10245157.png" alt="cartoon">
+  <img src="https://cdn-icons-png.flaticon.com/512/2965/2965567.png" class="bag" id="bag" alt="bag">
+</div>
+
+<!-- Login Form -->
+<div class="login-box" id="loginBox">
+  <h2>Welcome Back! 👋</h2>
+  <input type="text" id="username" placeholder="Username" required><br>
+  <input type="password" id="password" placeholder="Password" required><br>
+  <button onclick="signIn()">Sign In</button>
+  <button onclick="createAccount()">Create Account</button>
+  <p class="success" id="successMsg">Account Created Successfully! 🎉</p>
+</div>
+
+<script>
+  const char = document.getElementById('char');
+  const bag = document.getElementById('bag');
+  const loginBox = document.getElementById('loginBox');
+  const successMsg = document.getElementById('successMsg');
+
+  // 1. Walk in with bag
+  setTimeout(() => {
+    char.style.animation = 'walkIn 2.5s forwards';
+  }, 500);
+
+  // 2. Put bag down + bag bounces + step aside
+  setTimeout(() => {
+    bag.style.animation = 'bounceBag 0.6s 3';
+    setTimeout(() => {
+      bag.style.bottom = '-50px';
+      char.style.animation = 'stepAside 1s forwards';
+    }, 1800);
+  }, 3200);
+
+  // 3. Show login page
+  setTimeout(() => {
+    loginBox.classList.add('show');
+  }, 5000);
+
+  // SAVE USERS WITH localStorage
+  function createAccount() {
+    const user = document.getElementById('username').value;
+    const pass = document.getElementById('password').value;
+    
+    if(user === '' || pass === '') {
+      alert('Please fill both fields');
+      return;
+    }
+
+    // Save to browser storage
+    let users = JSON.parse(localStorage.getItem('users')) || [];
+    users.push({username: user, password: pass});
+    localStorage.setItem('users', JSON.stringify(users));
+
+    successMsg.style.display = 'block';
+    // 4. Character dances
+    char.style.animation = 'dance 0.4s infinite';
+    setTimeout(() => {
+      char.style.animation = '';
+    }, 2500);
+  }
+
+  function signIn() {
+    const user = document.getElementById('username').value;
+    const pass = document.getElementById('password').value;
+    let users = JSON.parse(localStorage.getItem('users')) || [];
+    
+    const found = users.find(u => u.username === user && u.password === pass);
+    
+    if(found) {
+      alert('Signed In Successfully! Welcome ' + user);
+    } else {
+      alert('User not found. Please create an account first.');
+    }
+  }
+</script>
+
+</body>
+</html>
